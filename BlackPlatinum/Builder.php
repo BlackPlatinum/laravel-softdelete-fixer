@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App\Component\Extensions;
+namespace BlackPlatinum;
 
 
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,7 +15,7 @@ class Builder extends \Illuminate\Database\Eloquent\Builder
      * @param string $table
      * @return string
      */
-    protected function getModelName(string $table): string
+    protected function getModelName($table)
     {
         return Str::studly(Str::singular($table));
     }
@@ -24,9 +24,9 @@ class Builder extends \Illuminate\Database\Eloquent\Builder
      * Get Model class by it's name
      *
      * @param string $modelName
-     * @return string
+     * @return string|false
      */
-    protected function getModelClass(string $modelName): string
+    protected function getModelClass($modelName)
     {
         $fromEnv = $this->getModelClassFromEnv($modelName);
         if ($fromEnv) return $fromEnv;
@@ -44,74 +44,24 @@ class Builder extends \Illuminate\Database\Eloquent\Builder
     }
 
     /**
-     * Last way is searching in declared class to find table's model class
-     *
-     * @param string $modelName
-     * @return bool|mixed
-     */
-    protected function getModelClassFromSearching(string $modelName)
-    {
-        foreach (get_declared_classes() as $class) {
-            if (is_subclass_of($class, 'Illuminate\Database\Eloquent\Model')) {
-                if (class_basename($class) === $modelName) {
-                    return $class;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Try to get model from app namespace
-     *
-     * @param string $modelsName
-     * @return bool|string
-     */
-    protected function getModelClassFromAppNamespace(string $modelsName)
-    {
-        if (!class_exists(app()->getNamespace() . $modelsName)) return false;
-        return app()->getNamespace() . $modelsName;
-    }
-
-    /**
-     * Try to get model from current query model's namespace
-     *
-     * @param string $modelName
-     * @return bool|string
-     */
-    protected function getModelClassFormCurrentModel(string $modelName)
-    {
-        $thisClass = get_class($this->model);
-        $namespace = str_replace(class_basename($thisClass), '', $thisClass);
-        if (!class_exists($namespace . $modelName)) return false;
-        return $namespace . $modelName;
-    }
-
-    /**
-     * Try to get model from environment key
-     *
-     * @param string $modelName
-     * @return bool|string
-     */
-    protected function getModelClassFromEnv(string $modelName)
-    {
-        $namespace = env('MODEL_NAMESPACE', false);
-        if (!$namespace) return false;
-        if (!class_exists("$namespace\\$modelName")) return false;
-        return "$namespace\\$modelName";
-    }
-
-    /**
      * Check given table has soft delete or not
      *
      * @param string $table
      * @return bool
+     * @throws ModelNotFoundException
      */
-    protected function checkSoftDelete(string $table): bool
+    protected function checkSoftDelete($table)
     {
         $model = $this->getModelName($table);
-        $model = $this->getModelClass($model);
-        return in_array(SoftDeletes::class, class_uses_recursive($model));
+        $modelClass = $this->getModelClass($model);
+        if ($modelClass) {
+            return in_array(SoftDeletes::class, class_uses_recursive($modelClass));
+        }
+        $modelClass = $this->getModelClass($table);
+        if ($modelClass) {
+            return in_array(SoftDeletes::class, class_uses_recursive($modelClass));
+        }
+        throw new ModelNotFoundException($table);
     }
 
     /**
@@ -126,6 +76,7 @@ class Builder extends \Illuminate\Database\Eloquent\Builder
      * @param bool $withTrash
      * @return \Illuminate\Database\Query\Builder|$this|\Illuminate\Database\Eloquent\Builder
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     * @throws ModelNotFoundException
      */
     public function join($table, $first, $operator = null, $second = null, $type = 'inner', $where = false, $withTrash = false)
     {
@@ -136,5 +87,68 @@ class Builder extends \Illuminate\Database\Eloquent\Builder
             }
         }
         return parent::join($table, $first, $operator, $second, $type, $where);
+    }
+
+
+    /**
+     * Last way is searching in declared class to find table's model class
+     *
+     * @param string $modelName
+     * @return bool|mixed
+     */
+    protected function getModelClassFromSearching($modelName)
+    {
+        foreach (get_declared_classes() as $class) {
+            if (is_subclass_of($class, 'Illuminate\Database\Eloquent\Model')) {
+                if (class_basename($class) === $modelName) {
+                    return $class;
+                }
+                $model = new $class;
+                if ($model->getTable() === $modelName) {
+                    return $class;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Try to get model from app namespace
+     *
+     * @param string $modelsName
+     * @return bool|string
+     */
+    protected function getModelClassFromAppNamespace($modelsName)
+    {
+        if (!class_exists(app()->getNamespace() . $modelsName)) return false;
+        return app()->getNamespace() . $modelsName;
+    }
+
+    /**
+     * Try to get model from current query model's namespace
+     *
+     * @param string $modelName
+     * @return bool|string
+     */
+    protected function getModelClassFormCurrentModel($modelName)
+    {
+        $thisClass = get_class($this->model);
+        $namespace = str_replace(class_basename($thisClass), '', $thisClass);
+        if (!class_exists($namespace . $modelName)) return false;
+        return $namespace . $modelName;
+    }
+
+    /**
+     * Try to get model from environment key
+     *
+     * @param string $modelName
+     * @return bool|string
+     */
+    protected function getModelClassFromEnv($modelName)
+    {
+        $namespace = env('MODEL_NAMESPACE', false);
+        if (!$namespace) return false;
+        if (!class_exists("$namespace\\$modelName")) return false;
+        return "$namespace\\$modelName";
     }
 }

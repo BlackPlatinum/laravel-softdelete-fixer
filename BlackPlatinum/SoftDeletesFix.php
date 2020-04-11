@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App\Component\Extensions;
+namespace BlackPlatinum;
 
 
 trait SoftDeletesFix
