@@ -1,0 +1,31 @@
+{
+  "name": "blackplatinum/laravel-softdelete-fixer",
+  "description": "The Laravel framework soft delete fixer package.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "BlackPlatinum Developers",
+      "email": "blackplatinum2019@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^7.2.5",
+    "illuminate/database": "^7.5",
+    "illuminate/support": "^7.5",
+    "laravel/helpers": "^1.2"
+  },
+  "require-dev": {
+    "laravel/framework": "^7.5"
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "autoload": {
+    "psr-4": {
+      "BlackPlatinum\\": ""
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
