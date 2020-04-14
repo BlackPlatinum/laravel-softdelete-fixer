@@ -3,28 +3,32 @@
 namespace BlackPlatinum\Eloquent;
 
 use BlackPlatinum\Exceptions\ModelNotFoundException;
-use Illuminate\Database\Eloquent\Builder as LaravelBuilder;
+use Closure;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Str;
 
-class Builder extends LaravelBuilder
+class Builder extends EloquentBuilder
 {
+    private $modelFinder;
+
     /**
      * Create a new Eloquent query builder instance.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param QueryBuilder $query
      * @return void
      */
     public function __construct(QueryBuilder $query)
     {
         parent::__construct($query);
+        $this->modelFinder = new ModelFinder();
     }
 
     /**
      * Get Model name by table name
      *
-     * @param  string  $table
+     * @param string $table
      * @return string
      */
     protected function getModelName($table)
@@ -33,51 +37,40 @@ class Builder extends LaravelBuilder
     }
 
     /**
-     * Get Model class by it's name
+     * Get model finder object
      *
-     * @param  string  $modelName
-     * @return string|false
+     * @return ModelFinder
      */
-    protected function getModelClass($modelName)
+    public function getModelFinder()
     {
-        $fromEnv = $this->getModelClassFromEnv($modelName);
-        if ($fromEnv) {
-            return $fromEnv;
-        }
+        return $this->modelFinder;
+    }
 
-        $fromCurrentModel = $this->getModelClassFormCurrentModel($modelName);
-        if ($fromCurrentModel) {
-            return $fromCurrentModel;
-        }
-
-        $fromNamespace = $this->getModelClassFromAppNamespace($modelName);
-        if ($fromNamespace) {
-            return $fromNamespace;
-        }
-
-        $fromSearch = $this->getModelClassFromSearching($modelName);
-        if ($fromSearch) {
-            return $fromSearch;
-        }
-
-        return false;
+    /**
+     * Pass a closure as an other way to find model class
+     *
+     * @param Closure $closure
+     */
+    public function addToFinder($closure)
+    {
+        $this->modelFinder->addToFinder($closure);
     }
 
     /**
      * Check given table has soft delete or not
      *
-     * @param  string  $table
+     * @param string $table
      * @return bool
      * @throws ModelNotFoundException
      */
     protected function checkSoftDelete($table)
     {
         $model = $this->getModelName($table);
-        $modelClass = $this->getModelClass($model);
+        $modelClass = $this->modelFinder->getModel($model, $this->model);
         if ($modelClass) {
             return in_array(SoftDeletes::class, class_uses_recursive($modelClass));
         }
-        $modelClass = $this->getModelClass($table);
+        $modelClass = $this->modelFinder->getModel($model, $this->model);
         if ($modelClass) {
             return in_array(SoftDeletes::class, class_uses_recursive($modelClass));
         }
@@ -87,26 +80,19 @@ class Builder extends LaravelBuilder
     /**
      * Add a join clause to the query.
      *
-     * @param  string  $table
-     * @param  \Closure|string  $first
-     * @param  string|null  $operator
-     * @param  string|null  $second
-     * @param  string  $type
-     * @param  bool  $where
-     * @param  bool  $withTrash
-     * @return \Illuminate\Database\Query\Builder|$this|\Illuminate\Database\Eloquent\Builder
+     * @param string $table
+     * @param \Closure|string $first
+     * @param string|null $operator
+     * @param string|null $second
+     * @param string $type
+     * @param bool $where
+     * @param bool $withTrash
+     * @return QueryBuilder|$this|\Illuminate\Database\Eloquent\Builder
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws ModelNotFoundException
      */
-    public function join(
-        $table,
-        $first,
-        $operator = null,
-        $second = null,
-        $type = 'inner',
-        $where = false,
-        $withTrash = false
-    ) {
+    public function join($table, $first, $operator = null, $second = null, $type = 'inner', $where = false, $withTrash = false)
+    {
         if (!$withTrash) {
             if ($this->checkSoftDelete($table)) {
                 return parent::join($table, $first, $operator, $second, $type, $where)
@@ -114,76 +100,5 @@ class Builder extends LaravelBuilder
             }
         }
         return parent::join($table, $first, $operator, $second, $type, $where);
-    }
-
-
-    /**
-     * Last way is searching in declared class to find table's model class
-     *
-     * @param  string  $modelName
-     * @return bool|mixed
-     */
-    private function getModelClassFromSearching($modelName)
-    {
-        foreach (get_declared_classes() as $class) {
-            if (is_subclass_of($class, 'Illuminate\Database\Eloquent\Model')) {
-                if (class_basename($class) === $modelName) {
-                    return $class;
-                }
-                $model = (object) new $class;
-                if ($model->getTable() === $modelName) {
-                    return $class;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Try to get model from app namespace
-     *
-     * @param  string  $modelsName
-     * @return bool|string
-     */
-    private function getModelClassFromAppNamespace($modelsName)
-    {
-        if (!class_exists(app()->getNamespace().$modelsName)) {
-            return false;
-        }
-        return app()->getNamespace().$modelsName;
-    }
-
-    /**
-     * Try to get model from current query model's namespace
-     *
-     * @param  string  $modelName
-     * @return bool|string
-     */
-    private function getModelClassFormCurrentModel($modelName)
-    {
-        $thisClass = get_class($this->model);
-        $namespace = str_replace(class_basename($thisClass), '', $thisClass);
-        if (!class_exists($namespace.$modelName)) {
-            return false;
-        }
-        return $namespace.$modelName;
-    }
-
-    /**
-     * Try to get model from environment key
-     *
-     * @param  string  $modelName
-     * @return bool|string
-     */
-    private function getModelClassFromEnv($modelName)
-    {
-        $namespace = env('MODEL_NAMESPACE', false);
-        if (!$namespace) {
-            return false;
-        }
-        if (!class_exists("$namespace\\$modelName")) {
-            return false;
-        }
-        return "$namespace\\$modelName";
     }
 }
