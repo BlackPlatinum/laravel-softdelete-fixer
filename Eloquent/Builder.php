@@ -87,9 +87,7 @@ class Builder extends EloquentBuilder
      * @param string $type
      * @param bool $where
      * @param bool $withTrash
-     * @return QueryBuilder|$this|\Illuminate\Database\Eloquent\Builder
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     * @throws ModelNotFoundException
+     * @return QueryBuilder|$this|EloquentBuilder
      */
     public function join($table, $first, $operator = null, $second = null, $type = 'inner', $where = false, $withTrash = false)
     {

@@ -1,8 +1,6 @@
 <?php
 
-
 namespace BlackPlatinum\Eloquent;
-
 
 use Closure;
 
@@ -13,14 +11,15 @@ class ModelFinder
      *
      * @var array
      */
-    private $finders = [];
+    private $finders = [
+        'getModelClassFromEnv',
+        'getModelClassFormCurrentModel',
+        'getModelClassFromAppNamespace',
+        'getModelClassFromSearching',
+    ];
 
     public function __construct()
     {
-        array_push($this->finders, $this->getModelClassFromEnv());
-        array_push($this->finders, $this->getModelClassFormCurrentModel());
-        array_push($this->finders, $this->getModelClassFromAppNamespace());
-        array_push($this->finders, $this->getModelClassFromSearching());
     }
 
     /**
@@ -45,6 +44,9 @@ class ModelFinder
         foreach ($this->finders as $finder) {
             if ($finder instanceof Closure) {
                 $result = $finder($modelName, $model);
+                if ($result) return $result;
+            } elseif (gettype($finder) === 'string') {
+                $result = $this->$finder($modelName, $model);
                 if ($result) return $result;
             }
         }
