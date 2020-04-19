@@ -11,12 +11,7 @@
   ],
   "require": {
     "php": "^7.0",
-    "illuminate/database": "^6.0",
-    "illuminate/support": "^6.0",
-    "laravel/helpers": "^1.2",
     "laravel/framework": "^6.0"
-  },
-  "require-dev": {
   },
   "config": {
     "sort-packages": true
