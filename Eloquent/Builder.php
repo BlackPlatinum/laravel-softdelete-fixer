@@ -3,11 +3,11 @@
 namespace BlackPlatinum\Eloquent;
 
 use BlackPlatinum\Exceptions\ModelNotFoundException;
-use Closure;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Str;
+use Closure;
 
 class Builder extends EloquentBuilder
 {
@@ -81,7 +81,7 @@ class Builder extends EloquentBuilder
      * Add a join clause to the query.
      *
      * @param string $table
-     * @param \Closure|string $first
+     * @param Closure|string $first
      * @param string|null $operator
      * @param string|null $second
      * @param string $type
