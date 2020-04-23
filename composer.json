@@ -9,13 +9,6 @@
       "email": "blackplatinum2019@gmail.com"
     }
   ],
-  "require": {
-    "php": "^7.0",
-    "laravel/framework": "^6.0"
-  },
-  "config": {
-    "sort-packages": true
-  },
   "autoload": {
     "psr-4": {
       "BlackPlatinum\\": ""
