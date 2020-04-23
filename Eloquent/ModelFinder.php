@@ -18,6 +18,9 @@ class ModelFinder
         'getModelClassFromSearching',
     ];
 
+    /**
+     * Creates a new instance of ModelFinder
+     */
     public function __construct()
     {
     }
