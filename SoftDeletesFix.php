@@ -2,10 +2,13 @@
 
 namespace BlackPlatinum;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use BlackPlatinum\Eloquent\Builder;
 
 trait SoftDeletesFix
 {
+    use SoftDeletes;
+    
     /**
      * Create a new Eloquent query builder for the model.
      *
